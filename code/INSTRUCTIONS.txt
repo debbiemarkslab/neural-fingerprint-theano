@@ -1,0 +1,33 @@
+STEP 1 - Preprocess:
+
+Inside the rdkit_preprocessing subdirectory are two main files that should be used: ecfpFingerprintGenThreaded.py and genConvMolFeatures.py.
+
+First you will need to load Rdkit. When installed, use: source activate my-rdkit-env
+
+ecfpFingerprintGenThreaded.py should be used to generate ECFP fingerprints before the machine learning process and saved approprately.
+
+genConvMolFeatures.py will save a pickeled version of the data structure holding the molecule and graph structure of the molecule.
+
+After generating the features and saving the file, you can get rid of rdkit: deactivate my-rdkit-env
+
+STEP 2 - Deep Learnify:
+
+The general structure of these algorithms were built around Lasagne, and modularity of layers and features was desired.
+
+Contains custom Lasagne/Theano layers required for certain ML purposes:
+
+lasagneCustomFingerprintLayers.py
+
+Contains the Lasagne models for each of the deep learning modules:
+
+lasagneModelsFingerprints.py
+
+Wrangles data input and output to make those processes less messy:
+
+seqHelper.py
+
+These are then used in the actual deep learning software--the other aptly named *.py files.
+
+STEP 3 - Interpret:
+
+The output of the RNN and CNN files are saved for later preprocessing. Use highlight_molecule_cnn.py for the CNN predictions and highlight_smiles_rnn.py for the RNN predictions.
