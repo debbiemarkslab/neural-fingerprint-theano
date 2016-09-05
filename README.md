@@ -1,7 +1,7 @@
 Visual Neural Graph Fingerprints in Theano
 =============
 
-<img src="https://github.com/debbiemarkslab/neural-fingerprint-theano/blob/master/data/images/neural_fing_img_github.png" width="1000">
+<img src="https://github.com/debbiemarkslab/neural-fingerprint-theano/blob/master/data/images/neural_fing_img_github.png" width="700">
 
 This software package implements visual convolutional neural graph fingerprints in Theano/Lasagne.
 
