@@ -127,6 +127,10 @@ for epoch in xrange(num_epochs):
             test_prediction,test_error = test_func(x_vals,x_mask,y_vals)
             test_error_list += test_error.tolist()
 
+        print "##########################################"
+        print "EPOCH:\t"+str(epoch+1)+"\tRMSE\t",np.sqrt(np.mean(test_error_list)),'\tMSE\t',np.mean(test_error_list)
+        print "##########################################"
+
         #then write out my progress
         OUTPUT = open(progress_filename, 'a')
         OUTPUT.write(str(epoch)+","+str(np.sqrt(np.mean(test_error_list)))+','+str(np.mean(test_error_list))+'\n')

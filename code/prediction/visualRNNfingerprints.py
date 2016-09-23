@@ -134,7 +134,8 @@ for epoch in xrange(num_epochs):
         train_prediction,train_error,train_viz = train_func(x_vals,x_mask,y_vals)
 
 
-    testErrorList = []
+    test_error_list = []
+
     if epoch % 1 == 0:
 
         #generate my minibatches
@@ -164,8 +165,14 @@ for epoch in xrange(num_epochs):
             #   has already been trained
             test_prediction,test_error_output,test_viz = test_func(x_vals,x_mask,y_vals)
 
+            test_error_list += test_error_output.tolist()
+
             #then write out the prediction for the training data
             seqHelper.write_out_rnn_prediction(experiment_list,x_mask,test_viz,name_to_sequence,OUTPUT)
+
+        print "##########################################"
+        print "EPOCH:\t"+str(epoch+1)+"\tRMSE\t",np.sqrt(np.mean(test_error_list)),'\tMSE\t',np.mean(test_error_list)
+        print "##########################################"
 
         OUTPUT.close()
 

@@ -315,8 +315,12 @@ def gen_batch_XY_rnn(seq_list,name_to_sequence,name_to_chem_val,max_seq_length, 
         y_vals[i] = name_to_chem_val[seqName]
     return asciiseq_list,x_vals,x_mask,y_vals
 
-def write_out_predictions_cnn(experiment_list,x_mask,smiles_to_rdkit_list,
-    viz, OUTPUTVIZ):
+
+
+
+
+def write_out_predictions_cnn(experiment_list, x_mask, smiles_to_rdkit_list,
+    viz, test_prediction, OUTPUTVIZ):
 
     for i,smiles in enumerate(experiment_list):
         ind_mask = x_mask[i]

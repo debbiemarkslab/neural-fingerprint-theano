@@ -10,8 +10,9 @@ from lasagne.layers.merge import MergeLayer
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 from lasagne.random import get_rng
 
-from lasagneCustomFingerprintLayers import LSTMLayer, SparsifyFingerprintLayer,
-    FingerprintHiddensLayer, FingerprintGenTopSum, VizAndPredMolLayer
+from lasagneCustomFingerprintLayers import LSTMLayer, SparsifyFingerprintLayer,\
+    FingerprintHiddensLayer, FingerprintGenTopSum, VizAndPredMolLayer, FingerprintGen,\
+    FingerprintMerge
 
 
 import theano
@@ -27,7 +28,7 @@ import theano.tensor as T
 def buildVisualCNNfingerprint(input_atom, input_bonds, input_atom_index, input_bond_index, input_mask, \
     max_atom_len, max_bond_len, input_atom_dim, input_bond_dim, input_index_dim, fingerprint_dim,
     batch_size, output_dim, final_layer_type, fingerprint_network_architecture=[],\
-    final_hidden_units):
+    final_hidden_units=0):
 
     dropout_prob = 0.0
     network_vals = {}
@@ -44,11 +45,10 @@ def buildVisualCNNfingerprint(input_atom, input_bonds, input_atom_index, input_b
 
     first_hidden_units_num = fingerprint_network_architecture[0]
 
-
     #do the first hidden layer of the network
     network_vals['hiddens_for_atoms'] = FingerprintHiddensLayer([l_index_atom,l_index_bond,\
-        l_in_atom,l_in_bond,l_in_atom,l_mask], batch_size, input_atom_dim,\
-        input_atom_dim,input_bond_dim,first_hidden_units_num,max_atom_len,p_dropout=0.0)
+        l_in_atom,l_in_bond,l_in_atom,l_mask], input_atom_dim, input_atom_dim,\
+        input_bond_dim, first_hidden_units_num, max_atom_len)
 
     #then sparsify
     network_vals['sparse_for_atoms'] = SparsifyFingerprintLayer([network_vals['hiddens_for_atoms']],\
@@ -65,9 +65,9 @@ def buildVisualCNNfingerprint(input_atom, input_bonds, input_atom_index, input_b
 
         #get the embedding of the sequences we are encoding
         network_vals['hiddens_for_atoms'] = FingerprintHiddensLayer([l_index_atom,\
-            l_index_bond, l_in_atom,l_in_bond,network_vals['hiddens_for_atoms'],\
-            l_mask], batch_size, prev_hidden_units, input_atom_dim, \
-            input_bond_dim,curr_num_hiddens,max_atom_len)
+            l_index_bond, l_in_atom, l_in_bond, network_vals['hiddens_for_atoms'],\
+            l_mask], prev_hidden_units, input_atom_dim, input_bond_dim, \
+            curr_num_hiddens, max_atom_len)
 
         new_fingerprints = SparsifyFingerprintLayer([network_vals['hiddens_for_atoms']],\
             first_hidden_units_num, fingerprint_dim)
@@ -163,7 +163,6 @@ def rnnControl(input_molecules, input_molecules_mask, num_features, max_len, \
     network_vals['third_layer'] = ElemwiseSumLayer([rnn_forward_ind, rnn_backward_ind])
 
 
-
     network_vals['prediction'] = DenseLayer(network_vals['third_layer'],
         output_dim, nonlinearity=final_layer_type)
 
@@ -240,8 +239,8 @@ def buildCNNFingerprint(input_atom, input_bonds, input_atom_index, input_bond_in
 
     #get the embedding of the sequences we are encoding
     network_vals['hiddens_for_atoms'] = FingerprintHiddensLayer([l_index_atom,l_index_bond,\
-        l_in_atom,l_in_bond,l_in_atom,l_mask], batch_size, input_atom_dim,\
-        input_atom_dim,input_bond_dim,first_hidden_units_num,max_atom_len)
+        l_in_atom,l_in_bond,l_in_atom,l_mask], input_atom_dim, input_atom_dim,
+        input_bond_dim,first_hidden_units_num,max_atom_len)
 
     #sparsify
     network_vals['sparse_for_atoms'] = SparsifyFingerprintLayer([network_vals['hiddens_for_atoms']],\
@@ -250,18 +249,15 @@ def buildCNNFingerprint(input_atom, input_bonds, input_atom_index, input_bond_in
 
     network_vals['fingerprints'] = FingerprintGen([network_vals['sparse_for_atoms'],l_mask])
 
-
-
     for i,curr_num_hiddens in enumerate(fingerprint_network_architecture[1:]):
 
         prev_hidden_units = fingerprint_network_architecture[i]
 
+        network_vals['hiddens_for_atoms'] = FingerprintHiddensLayer([l_index_atom,l_index_bond,\
+            l_in_atom,l_in_bond,network_vals['hiddens_for_atoms'],l_mask], prev_hidden_units,
+            input_atom_dim, input_bond_dim, curr_num_hiddens, max_atom_len)
 
-        network_vals['hiddens_for_atoms'] = FingerprintHiddensLayerFast([l_index_atom,l_index_bond,\
-            l_in_atom,l_in_bond,network_vals['hiddens_for_atoms'],l_mask],batch_size,\
-            prev_hidden_units,input_atom_dim,input_bond_dim,curr_num_hiddens,max_atom_len)
-
-        network_vals['sparse_for_atoms'] = SparsifyFingerprintLayerFast([network_vals['hiddens_for_atoms']],\
+        network_vals['sparse_for_atoms'] = SparsifyFingerprintLayer([network_vals['hiddens_for_atoms']],\
             curr_num_hiddens, fingerprint_dim)
 
         newFingerprints = FingerprintGen([network_vals['sparse_for_atoms'],l_mask])

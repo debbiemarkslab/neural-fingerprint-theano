@@ -287,6 +287,26 @@ class FingerprintHiddensLayer(MergeLayer):
 
 
 
+class FingerprintMerge(MergeLayer):
+
+    def __init__(self, incoming, **kwargs):
+        super(FingerprintMerge, self).__init__(incoming, **kwargs)
+
+    def get_output_shape_for(self, input_shapes):
+        #this returns the shape of the concatenated layer
+        #dimensionality: (batch_size,sequence_length,hidden_units_num)
+        input_shape = input_shapes[0]
+        return input_shape
+
+    def get_output_for(self, inputs, **kwargs):
+        #concat is the first input
+        old_fingerprints = inputs[0]
+        #reweighting is the second input
+        new_fingerprints = inputs[1]
+        #multiply the reweighting by the concatenation to get the scaling
+        return (old_fingerprints + new_fingerprints)
+
+
 class Gate(object):
     """
     lasagne.layers.recurrent.Gate(W_in=lasagne.init.Normal(0.1),
@@ -321,7 +341,7 @@ class Gate(object):
     ...                    forgetgate=forget_gate)
     References
     ----------
-    .. [1] Gers, Felix A., Jürgen Schmidhuber, and Fred Cummins. "Learning to
+    .. [1] Gers, Felix A., Jurgen Schmidhuber, and Fred Cummins. "Learning to
            forget: Continual prediction with LSTM." Neural computation 12.10
            (2000): 2451-2471.
     """

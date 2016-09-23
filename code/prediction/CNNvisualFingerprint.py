@@ -15,7 +15,7 @@ import lasagneModelsFingerprints
 
 
 #get my files
-filename = '../../data/csv_files/logSolubilityTest.csv'
+expr_filename = '../../data/csv_files/logSolubilityTest.csv'
 fingerprint_filename = '../../data/temp/logSolubilityInput_withRDKITidx.pkl'
 
 #set some hyperparameters
@@ -33,7 +33,8 @@ start_time = str(time.ctime()).replace(':','-').replace(' ','_')
 fingerprint_dim = 265
 #this is the dimension of the hiddens of the fingerprint
 #the length of the list determines the number of layers for the molecule conv net
-fingerprint_network_architecture=[500]*5
+fingerprint_network_architecture = [200]*2
+#fingerprint_network_architecture=[500]*5
 
 # for a neural net on the final output, make this number > 0
 final_neural_net = 1000
@@ -44,13 +45,13 @@ final_neural_net = 1000
 
 #then make the name of the output to save for testing
 neural_net_present = 'True'
-if neural_net == []:
+if fingerprint_network_architecture == []:
     neural_net_present = 'False'
 
 if expr_filename == 'data/logSolubilityTest.csv':
     test_type = 'solubility'
 
-progress_filename = 'output/CNN_fingerprint_visual_context_NN-'+neural_net_present+'_'+test_type+'_'+start_time+'.csv'
+progress_filename = 'output/CNN_fingerprint_visual_context_NN-'+neural_net_present+'_'+start_time+'.csv'
 
 
 
@@ -82,7 +83,7 @@ target_vals = fvector('output_data')
 cnn_model = lasagneModelsFingerprints.buildVisualCNNfingerprint(input_atom, input_bonds, \
     input_atom_index, input_bond_index, input_mask, max_atom_len, max_bond_len, num_atom_features, \
     num_bond_features, input_index_dim, fingerprint_dim, batch_size, output_dim, final_layer_type, \
-    fingerprint_network_architecture,final_neural_net)
+    fingerprint_network_architecture, final_neural_net)
 
 #count the number of parameters in the model and initialize progress file
 print "Number of parameters:",lasagne.layers.count_params(cnn_model['output'])
@@ -145,7 +146,7 @@ for epoch in xrange(num_epochs):
         expr_list_of_lists_test = seqHelper.gen_batch_list_of_lists(test_list,batch_size,(random_seed+epoch))
 
         #then run through the test data
-        OUTPUTVIZ = open('output/'+test_type+'_chemotype_predictions_NN-'+neural_net_present+'_'+start_time+'.csv', 'w')
+        OUTPUTVIZ = open('output/Chemotype_predictions_NN-'+neural_net_present+'_'+start_time+'.csv', 'w')
         for experiment_list in expr_list_of_lists_test:
             x_atom,x_bonds,x_atom_index,x_bond_index,x_mask,y_val = seqHelper.gen_batch_XY_reg(experiment_list,\
                 smiles_to_measurement,smiles_to_atom_info,smiles_to_bond_info,\
@@ -158,7 +159,12 @@ for epoch in xrange(num_epochs):
             test_error_list += test_error_output.tolist()
 
             #write out my visual predictions
-            seqHelper.write_out_predictions_cnn(experiment_list,x_mask,smiles_to_rdkit_list, test_viz, OUTPUTVIZ)
+            seqHelper.write_out_predictions_cnn(experiment_list,x_mask,smiles_to_rdkit_list,\
+                test_viz, test_prediction.tolist(), OUTPUTVIZ)
+
+        print "##########################################"
+        print "EPOCH:\t"+str(epoch+1)+"\tRMSE\t",np.sqrt(np.mean(test_error_list)),'\tMSE\t',np.mean(test_error_list)
+        print "##########################################"
 
         #then also do the visualizations for the training data
         for experiment_list in expr_list_of_lists_train:
@@ -168,7 +174,8 @@ for epoch in xrange(num_epochs):
 
             test_prediction,test_error_output,test_viz = test_func(x_atom,x_bonds,x_atom_index,x_bond_index,x_mask,y_val)
 
-            seqHelper.write_out_predictions_cnn(experiment_list,x_mask, smiles_to_rdkit_list, test_viz, OUTPUTVIZ)
+            seqHelper.write_out_predictions_cnn(experiment_list, x_mask, smiles_to_rdkit_list, \
+                test_viz, test_prediction.tolist(), OUTPUTVIZ)
 
         OUTPUTVIZ.close()
 

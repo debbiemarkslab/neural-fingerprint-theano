@@ -14,16 +14,20 @@ import seqHelper
 import lasagneModelsFingerprints
 
 
-filename = '../../data/csv_files/logSolubilityTest.csv'
+expr_filename = '../../data/csv_files/logSolubilityTest.csv'
 fingerprint_filename = '../../data/temp/logSolubilityInput_withRDKITidx.pkl'
 
 #some hyperparameters of the job
-batch_size = 1000
+#batch_size = 1000
+batch_size = 100
+
 #this is the dimension of the output fingerprint
 fingerprint_dim = 265
 #this is the dimension of the hiddens of the fingerprint
 #the length of the list determines the number of layers for the molecule conv net
-fingerprint_network_architecture=[500]*5
+#fingerprint_network_architecture=[500]*5
+fingerprint_network_architecture=[100]*2
+
 
 #some hyperparameters
 learning_rate = 0.001
@@ -134,7 +138,7 @@ for epoch in xrange(num_epochs):
 
         #run a training iteration
         train_error = train_func(x_atom,x_bonds,x_atom_index,x_bond_index,x_mask,y_val)
-
+        print train_error
     test_error_list = []
     #every certain number of epochs, run the test data as well
     if epoch % 1 == 0:
@@ -148,11 +152,12 @@ for epoch in xrange(num_epochs):
             #run the test output
             test_prediction_output, test_error_output = test_func(x_atom,x_bonds,x_atom_index,x_bond_index,x_mask,y_val)
 
+            print test_error_output
             #add it to the list of test error
             test_error_list += test_error_output.tolist()
 
         print "##########################################"
-        print "EPOCH:\t"+str(epoch)+"\tRMSE\t",np.sqrt(np.mean(test_error_list)),'\tMSE\t',np.mean(test_error_list)
+        print "EPOCH:\t"+str(epoch+1)+"\tRMSE\t",np.sqrt(np.mean(test_error_list)),'\tMSE\t',np.mean(test_error_list)
         print "##########################################"
 
         OUTPUT = open(progress_filename, 'a')
