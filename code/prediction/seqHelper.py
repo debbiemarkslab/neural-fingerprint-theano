@@ -1,8 +1,13 @@
 import numpy as np
 import cPickle as pickle
 
-
-
+#########################################
+# Reads in the ECFP fingerprint as well as the values to train on
+#   expr_filename : experiment filename to train on
+#   fingerprint_filename : precomputed fingerprint filename
+#
+#   Returns : dictionaries of the smiles to prediction and smiles to fingerprint
+#########################################
 def read_in_ecfp_data(expr_filename, fingerprint_filename):
     smiles_to_prediction = {}
     smiles_to_fingerprint = {}
@@ -27,12 +32,16 @@ def read_in_ecfp_data(expr_filename, fingerprint_filename):
         smiles_to_fingerprint[smiles] = np.asarray(fingerprint_list)
     INPUT.close()
 
-
     return smiles_to_prediction,smiles_to_fingerprint
 
-
-
-def read_in_data(filename,fingerprint_feat_filename):
+#########################################
+# Reads in the pickeled convolutional fingerprint as well as the values to train on
+#   expr_filename : experiment filename to train on
+#   fingerprint_feat_filename : precomputed fingerprint filename
+#
+#   Returns : dictionaries of the smiles to prediction and smiles to fingerprint
+#########################################
+def read_in_data(expr_filename,fingerprint_feat_filename):
     smiles_to_fingerprint_features = pickle.load(open(fingerprint_feat_filename, "rb" ))
 
     #first need to get the max atom length
@@ -134,7 +143,7 @@ def read_in_data(filename,fingerprint_feat_filename):
     del smiles_to_fingerprint_features
 
     smiles_to_measurement = {}
-    INPUT = open(filename, 'r')
+    INPUT = open(expr_filename, 'r')
     for line in INPUT:
         line = line.rstrip()
         line_list = line.split(',')
@@ -146,6 +155,14 @@ def read_in_data(filename,fingerprint_feat_filename):
         smiles_to_atom_neighbors,smiles_to_bond_neighbors,smiles_to_atom_mask,\
         smiles_to_rdkit_list,max_atom_len,max_bond_len,num_atom_features,num_bond_features
 
+######################################
+#Creates random training and test sets
+#    seq_list : list of smiles to train on
+#    test_num : how many samples are desired in the test
+#    random_seed : random seed to split data
+#
+#    Returns : lists of training and test data
+######################################
 def gen_rand_train_test_data(seq_list, test_num, random_seed):
 	#first set the random seed
 	np.random.seed(random_seed)
@@ -165,7 +182,14 @@ def gen_rand_train_test_data(seq_list, test_num, random_seed):
 		train_list.append(seq_list[number])
 	return test_list, train_list
 
-
+######################################
+#Generates random lists for minibatches
+#    smiles_list : list of smiles to train on
+#    batch_size : size of batch
+#    random_seed : random seed to split data
+#
+#    Returns : list of lists that are each a minibatch
+######################################
 def gen_batch_list_of_lists(smiles_list,batch_size,random_seed):
 	np.random.seed(random_seed)
 	batch_list_of_lists = []
@@ -179,6 +203,10 @@ def gen_batch_list_of_lists(smiles_list,batch_size,random_seed):
 		batch_list_of_lists.append(smiles_list_for_shuffle[i:i+batch_size])
 	return batch_list_of_lists
 
+####################################################
+#Generates minitbatches of the CNN data
+#
+####################################################
 def gen_batch_XY_reg(experiment_list,smiles_to_measurement,smiles_to_atom_info,smiles_to_bond_info,\
     smiles_to_atom_neighbors,smiles_to_bond_neighbors,smiles_to_atom_mask):
 
@@ -198,46 +226,18 @@ def gen_batch_XY_reg(experiment_list,smiles_to_measurement,smiles_to_atom_info,s
     return np.asarray(x_atom),np.asarray(x_bonds),np.asarray(x_atom_index),\
         np.asarray(x_bond_index),np.asarray(x_mask),np.asarray(y_val)
 
-
-
-
-def genBatchXY(experiment_list,smiles_to_measurement,smiles_to_atom_info,smiles_to_bond_info,\
-    smiles_to_atom_neighbors,smiles_to_bond_neighbors,smiles_to_atom_mask,smiles_to_set_descriptors):
-
-    y_val = []
-    x_mask = []
-    x_atom = []
-    x_bonds = []
-    x_atom_index = []
-    x_bond_index = []
-    x_set = []
-    for smiles in experiment_list:
-        y_val.append(smiles_to_measurement[smiles])
-        x_mask.append(smiles_to_atom_mask[smiles])
-        x_atom.append(smiles_to_atom_info[smiles])
-        x_bonds.append(smiles_to_bond_info[smiles])
-        x_atom_index.append(smiles_to_atom_neighbors[smiles])
-        x_bond_index.append(smiles_to_bond_neighbors[smiles])
-        x_set.append(smiles_to_set_descriptors[smiles])
-    return np.asarray(x_atom),np.asarray(x_bonds),np.asarray(x_atom_index),\
-        np.asarray(x_bond_index),np.asarray(x_mask),np.asarray(x_set),np.asarray(y_val)
-
-
-def gen_batch_list_of_lists(smiles_list,batch_size,random_seed):
-	np.random.seed(random_seed)
-	batch_list_of_lists = []
-	#make them a numpy list so I can shuffle them
-	smiles_for_shuffle = np.array(smiles_list[:])
-	#shuffle them
-	np.random.shuffle(smiles_for_shuffle)
-
-	smiles_list_for_shuffle = smiles_for_shuffle.tolist()
-	for i in xrange(0,len(smiles_list),batch_size):
-		batch_list_of_lists.append(smiles_list_for_shuffle[i:i+batch_size])
-	return batch_list_of_lists
-
+################################################
+#Makes a dictionary that turns the alphabet
+#   name_to_sequence : experiment name to sequences
+#
+#   Returns:
+#       alphabet_to_ordinal : dictionary of alphabet letter -> ordinal number
+#                                indexing for one-hot matrix
+#       ordinal_to_alphabet : dictionary of ordinal number -> alphabet letter
+################################################
 def make_one_hot_dict(name_to_sequence):
     alphabet = []
+    #was getting strange errors with some sequences; now default behavior
     if len(name_to_sequence) > 100000000000:
         counter = 0
         for name,sequence in name_to_sequence.iteritems():
@@ -261,6 +261,15 @@ def make_one_hot_dict(name_to_sequence):
 
     return alphabet_to_ordinal, ordinal_to_alphabet
 
+##############################################
+#Reads in the sequences for the RNN prediction as well as the y output
+#    filename : test filename
+#
+#    Returns : dictionaries containing:
+#                   expr num -> sequence
+#                   smiles -> y output
+#                   the maximum sequence length
+##############################################
 def read_in_chem_seq(filename):
     name_to_sequence = {}
     name_to_chem_val = {}
@@ -283,7 +292,19 @@ def read_in_chem_seq(filename):
     INPUT.close()
     return name_to_sequence,name_to_chem_val,max_seq_length
 
-def write_out_rnn_prediction(experiment_list,x_mask,test_viz,name_to_sequence,OUTPUT):
+
+###############################################
+#Writes out a csv file that holds the visualizations from the visual CNN
+#   experiment_list : list of smiles used
+#   x_mask : sequence mask
+#   smiles_to_rdkit_list : dictionary of smiles -> rdkit representation/count of atoms and bonds
+#   test_viz : list containing  the data needed for visualizations
+#   test_prediction : predicted output values
+#   OUTPUTVIZ : fileobject to write out visualizations
+#
+#   Returns : None
+##############################################
+def write_out_rnn_prediction(experiment_list,x_mask,test_viz,test_prediction,name_to_sequence,OUTPUT):
 
     for i,expr_number in enumerate(experiment_list):
         ind_mask = x_mask[i]
@@ -297,7 +318,14 @@ def write_out_rnn_prediction(experiment_list,x_mask,test_viz,name_to_sequence,OU
 
             OUTPUT.write(":".join(out_pred)+'\n')
 
-
+###################################################
+#Generates the minibatch used for training
+#    experiment_list : smiles used for this training iteration
+#    smiles_to_prediction : dictionary from smiles -> y value of prediction
+#    smiles_to_fingerprint : dictionary from smiles -> fingerprint
+#
+#    Returns: minitbatches of above data
+###################################################
 def gen_batch_XY_rnn(seq_list,name_to_sequence,name_to_chem_val,max_seq_length, alphabet_to_one_hot_sequence,output_dim):
     #initialize my x_vals, y_vals, and x_mask to zeros so I can add ones to them later
     x_vals = np.zeros((len(seq_list),max_seq_length,len(alphabet_to_one_hot_sequence)), dtype=np.float32)
@@ -316,16 +344,24 @@ def gen_batch_XY_rnn(seq_list,name_to_sequence,name_to_chem_val,max_seq_length, 
     return asciiseq_list,x_vals,x_mask,y_vals
 
 
-
-
-
+##############################################
+#Writes out a csv file that holds the visualizations from the visual CNN
+#   experiment_list : list of smiles used
+#   x_mask : sequence mask
+#   smiles_to_rdkit_list : dictionary of smiles -> rdkit representation/count of atoms and bonds
+#   vis_list : list containing  the data needed for visualizations
+#   test_prediction : predicted output values
+#   OUTPUTVIZ : fileobject to write out visualizations
+#
+#   Returns : None
+##############################################
 def write_out_predictions_cnn(experiment_list, x_mask, smiles_to_rdkit_list,
-    viz, test_prediction, OUTPUTVIZ):
+    viz_list, test_prediction, OUTPUTVIZ):
 
     for i,smiles in enumerate(experiment_list):
         ind_mask = x_mask[i]
         ind_atom = smiles_to_rdkit_list[smiles]
-        ind_pred = viz[i]
+        ind_pred = viz_list[i]
 
         out_atom = []
         out_pred = []
@@ -338,7 +374,14 @@ def write_out_predictions_cnn(experiment_list, x_mask, smiles_to_rdkit_list,
 
         OUTPUTVIZ.write(":".join(out_atom)+','+":".join(out_pred)+'\n')
 
-
+###################################################
+#Generates the minibatch used for training
+#    experiment_list : smiles used for this training iteration
+#    smiles_to_prediction : dictionary from smiles -> y value of prediction
+#    smiles_to_fingerprint : dictionary from smiles -> fingerprint
+#
+#    Returns: minitbatches of above data
+###################################################
 def gen_batch_XY_control(experiment_list, smiles_to_prediction, \
     smiles_to_fingerprint):
 

@@ -21,6 +21,7 @@ batch_size = 100
 learning_rate = 0.001
 num_epochs = 300
 rnn_hidden_units = 500
+
 random_seed = int(time.time())
 output_dim = 1
 l2_regularization_lambda = 0.00001
@@ -35,7 +36,7 @@ final_neural_net = 1000
 
 #then make the name of the output to save for testing
 neural_net_present = 'True'
-if neural_net == []:
+if final_neural_net == 0:
     neural_net_present = 'False'
 
 if filename == '../../data/csv_files/logSolubilityTest.csv':
@@ -127,7 +128,7 @@ for epoch in xrange(num_epochs):
     expr_list_of_lists_train = seqHelper.gen_batch_list_of_lists(train_list,batch_size,(epoch+random_seed))
 
     for experiment_list in expr_list_of_lists_train:
-        _,x_vals,x_mask,y_vals, = seqHelper.genBatchXYchem(experiment_list,name_to_sequence,\
+        _,x_vals,x_mask,y_vals, = seqHelper.gen_batch_XY_rnn(experiment_list,name_to_sequence,\
             name_to_measurement,max_seq_length,alphabet_to_one_hot_sequence,output_dim)
 
         #then do the training
@@ -150,10 +151,10 @@ for epoch in xrange(num_epochs):
             test_prediction,test_error_output,test_viz = test_func(x_vals,x_mask,y_vals)
 
             #get my error and save it to a list
-            testErrorList += test_error_output.tolist()
+            test_error_list += test_error_output.tolist()
 
             #then write out the prediction for the visualization for test
-            seqHelper.write_out_rnn_prediction(experiment_list,x_mask,test_viz,name_to_sequence,OUTPUT)
+            seqHelper.write_out_rnn_prediction(experiment_list,x_mask,test_viz,test_prediction,name_to_sequence,OUTPUT)
 
 
         #then run through all my training iterations for those visualizations too
@@ -168,7 +169,7 @@ for epoch in xrange(num_epochs):
             test_error_list += test_error_output.tolist()
 
             #then write out the prediction for the training data
-            seqHelper.write_out_rnn_prediction(experiment_list,x_mask,test_viz,name_to_sequence,OUTPUT)
+            seqHelper.write_out_rnn_prediction(experiment_list,x_mask,test_viz,test_prediction,name_to_sequence,OUTPUT)
 
         print "##########################################"
         print "EPOCH:\t"+str(epoch+1)+"\tRMSE\t",np.sqrt(np.mean(test_error_list)),'\tMSE\t',np.mean(test_error_list)
@@ -178,5 +179,5 @@ for epoch in xrange(num_epochs):
 
         #then write out my progress
         OUTPUT = open(progress_filename, 'a')
-        OUTPUT.write(str(epoch)+","+str(np.sqrt(np.mean(testErrorList)))+','+str(np.mean(testErrorList))+'\n')
+        OUTPUT.write(str(epoch)+","+str(np.sqrt(np.mean(test_error_list)))+','+str(np.mean(test_error_list))+'\n')
         OUTPUT.close()

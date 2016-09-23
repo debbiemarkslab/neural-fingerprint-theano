@@ -33,8 +33,7 @@ start_time = str(time.ctime()).replace(':','-').replace(' ','_')
 fingerprint_dim = 265
 #this is the dimension of the hiddens of the fingerprint
 #the length of the list determines the number of layers for the molecule conv net
-fingerprint_network_architecture = [200]*2
-#fingerprint_network_architecture=[500]*5
+fingerprint_network_architecture=[500]*5
 
 # for a neural net on the final output, make this number > 0
 final_neural_net = 1000

@@ -109,11 +109,6 @@ def rnnVisual(input_molecules, input_molecules_mask, num_features, max_len, \
     #get the embedding of the sequences we are encoding
     network_vals['embedding'] = ElemwiseSumLayer([lstm_forward, lstm_backward])
 
-    if neural_net == []:
-        final_hidden_units = 0
-    else:
-        final_hidden_units = neural_net[0]
-
     network_vals['prediction'] = VizAndPredMolLayer([network_vals['embedding'],\
         l_mask],num_input_units=rnn_hidden_units, num_output_units=output_dim,
         num_hidden_units=final_hidden_units, nonlinearity=final_layer_type)
